@@ -11,7 +11,7 @@ import 'firebase_options.dart';
 
 
 void main() async{
-
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -127,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await _peerConnection!.createOffer({'offerToReceiveVideo': 1});
     var session = parse(description.sdp.toString());
     //print("OFFER---->>>>"+json.encode(session));
-    createdRoomID="1";
+    createdRoomID=sdpController.text;
     Room room = Room(
         uid: createdRoomID, //DateTime.now().millisecondsSinceEpoch.toString(),
         offer: json.encode(session),
@@ -211,6 +211,8 @@ class _MyHomePageState extends State<MyHomePage> {
       onError: (error) => print("Listen failed: $error"),
     );
 
+    sdpController.text="Nombre de la sala";
+
     super.initState();
   }
 
@@ -280,12 +282,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     ElevatedButton(
                       onPressed: _createOffer,
-                      child: const Text("Offer"),
+                      child: const Text("Crear Sala"),
                     ),
                     const SizedBox(
                       height: 10,
                     ),
                     ElevatedButton(
+                      onPressed: () {
+                        db.collection("rooms").doc(sdpController.text).delete().then(
+                              (doc) => print("Document deleted"),
+                          onError: (e) => print("Error updating document $e"),
+                        );
+                      },
+                      child: const Text("Borrar sala (escribir nombre)"),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    /*ElevatedButton(
                       onPressed: _createAnswer,
                       child: const Text("Answer"),
                     ),
@@ -302,7 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ElevatedButton(
                       onPressed: _addCandidate,
                       child: const Text("Set Candidate"),
-                    ),
+                    ),*/
                   ],
                 )
               ],
@@ -320,7 +334,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       if(!_offer)_acceptOffer(index);
                       else _acceptAnswer(index);
                     },
-                    child: Text("Room "+index.toString()),
+                    child: Text(roomListArray[index].uid),
+                    //child: Text("Room "+index.toString()),
                   );
                 },
                 /*separatorBuilder: (BuildContext context, int index) {
@@ -347,7 +362,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     RTCSessionDescription description =
     RTCSessionDescription(sdp, 'offer');
-    //print(description.toMap());
+    print(description.toMap());
 
     await _peerConnection!.setRemoteDescription(description);
 
@@ -360,8 +375,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     roomListArray[index].answer=json.encode(session2);
     db.collection("rooms").doc(roomListArray[index].uid).set(roomListArray[index].toFirestore());
-
-
   }
 
   void _acceptAnswer(int index) async{
@@ -372,7 +385,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     RTCSessionDescription description =
     RTCSessionDescription(sdp, 'answer' );
-    //print(description.toMap());
+    print(description.toMap());
 
     await _peerConnection!.setRemoteDescription(description);
   }
